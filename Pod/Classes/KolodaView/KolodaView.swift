@@ -398,8 +398,8 @@ open class KolodaView: UIView, DraggableCardDelegate {
     }
 
     // MARK: Private
-    private func clear() {
-        currentCardIndex = 0
+    private func clear(index: Int = 0) {
+        currentCardIndex = index
         
         for card in visibleCards {
             card.removeFromSuperview()
@@ -646,9 +646,39 @@ open class KolodaView: UIView, DraggableCardDelegate {
         }
     }
     
-    public func resetCurrentCardIndex() {
-        clear()
+    // MARK: TA
+    public func resetCurrentCardIndex(index: Int = 0) {
+        clear(index: index)
         reloadData()
+    }
+    
+    // MARK: TA
+    public func swipeJump(_ direction: SwipeResultDirection,
+                          nextIndex: Int,
+                          force: Bool = false) {
+        if let frontCard = visibleCards.first, !frontCard.dragBegin {
+            
+            if visibleCards.count > 1 {
+                let nextCard = visibleCards[nextIndex]
+                nextCard.alpha = shouldTransparentizeNextCard ? alphaValueSemiTransparent : alphaValueOpaque
+            }
+            
+            animationSemaphore.increment()
+            
+            frontCard.swipe(direction) {
+                self.animationSemaphore.decrement()
+            }
+            frontCard.delegate = nil
+            currentCardIndex = nextIndex
+        }
+    }
+    // MARK: TA
+    public func swipeTo(index: Int = 0) {
+        guard index != currentCardIndex else {
+            return
+        }
+        swipeJump(index < currentCardIndex ? .left : .right, nextIndex: index, force: true)
+        delegate?.koloda(self, didShowCardAt: index)
     }
     
     public func viewForCard(at index: Int) -> UIView? {
